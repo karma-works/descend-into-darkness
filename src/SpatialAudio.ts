@@ -1,25 +1,50 @@
 import { HEARING_RANGE } from "./constants";
-import { EntityType, SpatialResult, Vector } from "./types";
+import { AudioSettings, EntityType, SpatialResult, Vector } from "./types";
+
+type CueMaterial = "body" | "rock" | "scrape" | "flutter" | "void" | "shimmer" | "voice" | "breath" | "beacon" | "spark";
+type UrgencyCurve = "stable" | "approach" | "critical";
 
 interface EntityAudioSource {
-  oscillator: OscillatorNode;
+  oscillators: OscillatorNode[];
   gain: GainNode;
   panner: PannerNode;
+  filter: BiquadFilterNode;
   type: EntityType;
 }
 
-const SIGNATURES: Record<EntityType, { wave: OscillatorType; frequency: number; gain: number }> = {
-  [EntityType.Rex]: { wave: "sine", frequency: 220, gain: 0.03 },
-  [EntityType.Debris]: { wave: "sawtooth", frequency: 760, gain: 0.16 },
-  [EntityType.Crawler]: { wave: "sawtooth", frequency: 95, gain: 0.08 },
-  [EntityType.Bat]: { wave: "triangle", frequency: 1200, gain: 0.06 },
-  [EntityType.Wraith]: { wave: "sine", frequency: 55, gain: 0.05 },
-  [EntityType.Crystal]: { wave: "sine", frequency: 880, gain: 0.08 },
-  [EntityType.Merchant]: { wave: "sine", frequency: 330, gain: 0.06 },
-  [EntityType.Boss]: { wave: "sawtooth", frequency: 70, gain: 0.11 },
-  [EntityType.Exit]: { wave: "triangle", frequency: 520, gain: 0.07 },
-  [EntityType.Fireball]: { wave: "square", frequency: 440, gain: 0.05 },
-  [EntityType.Checkpoint]: { wave: "sine", frequency: 660, gain: 0.05 },
+interface AudioCueProfile {
+  material: CueMaterial;
+  wave: OscillatorType;
+  baseFrequency: number;
+  gain: number;
+  pulseMinMs: number;
+  pulseMaxMs: number;
+  urgencyCurve: UrgencyCurve;
+  filter: BiquadFilterType;
+  filterFrequency: number;
+  harmonics: number[];
+}
+
+const DEFAULT_AUDIO_SETTINGS: AudioSettings = {
+  effectsVolume: 1,
+  speechVolume: 1,
+  monoMode: false,
+  verboseMara: false,
+  reducedThreatSpeed: false,
+};
+
+const CUE_PROFILES: Record<EntityType, AudioCueProfile> = {
+  [EntityType.Rex]: cue("body", "sine", 220, 0.03, 120, 360, "stable", "lowpass", 900, [1]),
+  [EntityType.Debris]: cue("rock", "sawtooth", 420, 0.17, 70, 460, "critical", "bandpass", 1600, [1, 1.48]),
+  [EntityType.Crawler]: cue("scrape", "sawtooth", 92, 0.08, 170, 720, "approach", "lowpass", 650, [1, 1.03]),
+  [EntityType.Bat]: cue("flutter", "triangle", 980, 0.06, 80, 260, "approach", "highpass", 700, [1, 1.33]),
+  [EntityType.Wraith]: cue("void", "sine", 52, 0.055, 450, 1200, "approach", "lowpass", 260, [1, 0.5]),
+  [EntityType.Crystal]: cue("shimmer", "sine", 880, 0.075, 280, 1150, "stable", "highpass", 900, [1, 1.5, 2]),
+  [EntityType.Merchant]: cue("voice", "sine", 330, 0.055, 500, 1400, "stable", "bandpass", 950, [1, 1.25]),
+  [EntityType.Boss]: cue("breath", "sawtooth", 66, 0.11, 220, 880, "approach", "lowpass", 420, [1, 1.01]),
+  [EntityType.Exit]: cue("beacon", "triangle", 520, 0.07, 240, 920, "stable", "bandpass", 780, [1, 1.5]),
+  [EntityType.Fireball]: cue("spark", "square", 440, 0.05, 90, 220, "critical", "highpass", 800, [1]),
+  [EntityType.Checkpoint]: cue("beacon", "sine", 660, 0.05, 240, 800, "stable", "bandpass", 1000, [1, 1.25]),
 };
 
 export class SpatialAudio {
@@ -28,12 +53,14 @@ export class SpatialAudio {
   private ambientGain: GainNode | undefined;
   private ambientOscillators: OscillatorNode[] = [];
   private sources = new Map<string, EntityAudioSource>();
+  private noiseBuffer: AudioBuffer | undefined;
   private muted = false;
+  private settings: AudioSettings = { ...DEFAULT_AUDIO_SETTINGS };
 
   async start(): Promise<void> {
     this.context ??= new AudioContext();
     this.master ??= this.context.createGain();
-    this.master.gain.value = this.muted ? 0 : 0.75;
+    this.updateMasterGain();
     this.master.connect(this.context.destination);
 
     if (this.context.state !== "running") {
@@ -43,7 +70,15 @@ export class SpatialAudio {
 
   setMuted(muted: boolean): void {
     this.muted = muted;
-    if (this.master) this.master.gain.setTargetAtTime(muted ? 0 : 0.75, this.now(), 0.02);
+    this.updateMasterGain();
+  }
+
+  setSettings(settings: AudioSettings): void {
+    this.settings = { ...settings };
+    this.updateMasterGain();
+    if (this.ambientGain) {
+      this.ambientGain.gain.setTargetAtTime(0.12 * this.settings.effectsVolume, this.now(), 0.08);
+    }
   }
 
   setListener(player: Vector): void {
@@ -74,11 +109,17 @@ export class SpatialAudio {
       this.sources.set(id, source);
     }
 
-    const panX = Math.max(-HEARING_RANGE, Math.min(HEARING_RANGE, dx));
+    const profile = CUE_PROFILES[type];
+    const proximity = Math.max(0, Math.min(1, 1 - distance / HEARING_RANGE));
+    const panX = this.settings.monoMode ? 0 : Math.max(-HEARING_RANGE, Math.min(HEARING_RANGE, dx));
     const pitchShift = Math.max(-260, Math.min(260, -dy * 0.45));
-    const signature = SIGNATURES[type];
-    const gain = signature.gain * Math.max(0.02, 1 - (distance / HEARING_RANGE) ** 2);
-    source.oscillator.frequency.setTargetAtTime(signature.frequency + pitchShift, this.now(), 0.03);
+    const gain = profile.gain * (0.18 + proximity * 0.82) * pulseAmount(this.now(), profile, proximity);
+
+    source.oscillators.forEach((oscillator, index) => {
+      const harmonic = profile.harmonics[index] ?? 1;
+      oscillator.frequency.setTargetAtTime(Math.max(20, (profile.baseFrequency + pitchShift) * harmonic), this.now(), 0.03);
+    });
+    source.filter.frequency.setTargetAtTime(profile.filterFrequency + proximity * 700, this.now(), 0.05);
     source.gain.gain.setTargetAtTime(gain, this.now(), 0.04);
     setPannerPosition(source.panner, player.x + panX, player.y + dy, -80);
   }
@@ -89,8 +130,11 @@ export class SpatialAudio {
     source.gain.gain.setTargetAtTime(0, this.now(), 0.01);
     window.setTimeout(() => {
       try {
-        source.oscillator.stop();
-        source.oscillator.disconnect();
+        source.oscillators.forEach((oscillator) => {
+          oscillator.stop();
+          oscillator.disconnect();
+        });
+        source.filter.disconnect();
         source.gain.disconnect();
         source.panner.disconnect();
       } catch {
@@ -107,27 +151,33 @@ export class SpatialAudio {
     results.slice(0, 8).forEach((result, index) => {
       const pan = result.direction === "left" ? -260 : result.direction === "right" ? 260 : 0;
       const vertical = result.vertical === "above" ? 160 : result.vertical === "below" ? -160 : 0;
-      const base = SIGNATURES[result.type].frequency;
-      const delay = start + 0.025 + index * 0.011;
-      this.playTone(base + vertical, 0.045, result.type, pan, vertical, delay);
+      const delay = start + 0.05 + index * 0.12;
+      this.playSignature(result.type, pan, delay, 0.11, vertical);
     });
   }
 
-  playSignature(type: EntityType, pan = 0): void {
-    const signature = SIGNATURES[type];
-    this.playTone(signature.frequency, Math.min(0.18, signature.gain * 2.2), type, pan, 0, this.now());
+  playSignature(type: EntityType, pan = 0, start = this.now(), duration = 0.12, y = 0): void {
+    const profile = CUE_PROFILES[type];
+    const gain = Math.min(0.2, profile.gain * 2.25);
+    if (profile.material === "rock" || profile.material === "scrape" || profile.material === "breath") {
+      this.playNoiseBurst(type, gain, pan, y, start, duration);
+      return;
+    }
+    this.playTone(profile.baseFrequency, gain, type, pan, y, start, profile.wave, duration);
   }
 
   playDebrisWarning(pan: number, overheadness: number): void {
-    const frequency = 520 + overheadness * 520;
-    this.playTone(frequency, 0.18, EntityType.Debris, pan, -140, this.now(), "sawtooth", 0.18);
+    const monoPan = this.settings.monoMode ? 0 : pan;
+    const frequency = 320 + overheadness * 520;
+    this.playNoiseBurst(EntityType.Debris, 0.16 + overheadness * 0.08, monoPan, -140, this.now(), 0.24);
+    this.playTone(frequency, 0.08 + overheadness * 0.08, EntityType.Debris, monoPan, -140, this.now() + 0.03, "sawtooth", 0.22);
   }
 
   startAmbient(depth: number): void {
     if (!this.context || !this.master) return;
     this.stopAmbient();
     this.ambientGain = this.context.createGain();
-    this.ambientGain.gain.value = 0.12;
+    this.ambientGain.gain.value = 0.12 * this.settings.effectsVolume;
     this.ambientGain.connect(this.master);
 
     const base = Math.max(38, 92 - depth * 4);
@@ -144,7 +194,7 @@ export class SpatialAudio {
 
   suppressAmbient(suppressed: boolean): void {
     if (!this.ambientGain) return;
-    this.ambientGain.gain.setTargetAtTime(suppressed ? 0.01 : 0.12, this.now(), 0.08);
+    this.ambientGain.gain.setTargetAtTime(suppressed ? 0.01 : 0.12 * this.settings.effectsVolume, this.now(), 0.08);
   }
 
   stopAll(): void {
@@ -168,20 +218,28 @@ export class SpatialAudio {
 
   private createSource(type: EntityType): EntityAudioSource {
     if (!this.context || !this.master) throw new Error("Audio context is not started.");
-    const signature = SIGNATURES[type];
-    const oscillator = this.context.createOscillator();
+    const profile = CUE_PROFILES[type];
+    const filter = this.context.createBiquadFilter();
     const gain = this.context.createGain();
     const panner = this.context.createPanner();
-    oscillator.type = signature.wave;
-    oscillator.frequency.value = signature.frequency;
+    const oscillators = profile.harmonics.map((harmonic, index) => {
+      const oscillator = this.context!.createOscillator();
+      oscillator.type = index === 0 ? profile.wave : "sine";
+      oscillator.frequency.value = profile.baseFrequency * harmonic;
+      oscillator.connect(filter);
+      oscillator.start();
+      return oscillator;
+    });
+
+    filter.type = profile.filter;
+    filter.frequency.value = profile.filterFrequency;
     gain.gain.value = 0;
     panner.panningModel = "HRTF";
     panner.distanceModel = "inverse";
     panner.refDistance = 120;
     panner.maxDistance = HEARING_RANGE;
-    oscillator.connect(gain).connect(panner).connect(this.master);
-    oscillator.start();
-    return { oscillator, gain, panner, type };
+    filter.connect(gain).connect(panner).connect(this.master);
+    return { oscillators, gain, panner, filter, type };
   }
 
   private playTone(
@@ -191,27 +249,96 @@ export class SpatialAudio {
     pan: number,
     y: number,
     start: number,
-    wave: OscillatorType = SIGNATURES[type].wave,
+    wave: OscillatorType = CUE_PROFILES[type].wave,
     duration = 0.09,
   ): void {
     if (!this.context || !this.master) return;
+    const profile = CUE_PROFILES[type];
     const osc = this.context.createOscillator();
     const gain = this.context.createGain();
+    const filter = this.context.createBiquadFilter();
     const panner = this.context.createPanner();
     osc.type = wave;
     osc.frequency.value = frequency;
+    filter.type = profile.filter;
+    filter.frequency.value = profile.filterFrequency;
     gain.gain.setValueAtTime(0, start);
     gain.gain.linearRampToValueAtTime(gainValue, start + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
-    setPannerPosition(panner, pan, y, -80);
-    osc.connect(gain).connect(panner).connect(this.master);
+    setPannerPosition(panner, this.settings.monoMode ? 0 : pan, y, -80);
+    osc.connect(filter).connect(gain).connect(panner).connect(this.master);
     osc.start(start);
     osc.stop(start + duration + 0.02);
+  }
+
+  private playNoiseBurst(type: EntityType, gainValue: number, pan: number, y: number, start: number, duration: number): void {
+    if (!this.context || !this.master) return;
+    const profile = CUE_PROFILES[type];
+    const noise = this.context.createBufferSource();
+    const gain = this.context.createGain();
+    const filter = this.context.createBiquadFilter();
+    const panner = this.context.createPanner();
+    noise.buffer = this.getNoiseBuffer();
+    filter.type = profile.filter;
+    filter.frequency.value = profile.filterFrequency;
+    gain.gain.setValueAtTime(0.001, start);
+    gain.gain.exponentialRampToValueAtTime(gainValue, start + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+    setPannerPosition(panner, this.settings.monoMode ? 0 : pan, y, -80);
+    noise.connect(filter).connect(gain).connect(panner).connect(this.master);
+    noise.start(start);
+    noise.stop(start + duration + 0.02);
+  }
+
+  private getNoiseBuffer(): AudioBuffer {
+    if (!this.context) throw new Error("Audio context is not started.");
+    if (this.noiseBuffer) return this.noiseBuffer;
+    const length = Math.floor(this.context.sampleRate * 0.4);
+    const buffer = this.context.createBuffer(1, length, this.context.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i += 1) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / length);
+    }
+    this.noiseBuffer = buffer;
+    return buffer;
+  }
+
+  private updateMasterGain(): void {
+    if (!this.master) return;
+    this.master.gain.setTargetAtTime(this.muted ? 0 : 0.75 * this.settings.effectsVolume, this.now(), 0.02);
   }
 
   private now(): number {
     return this.context?.currentTime ?? 0;
   }
+}
+
+function cue(
+  material: CueMaterial,
+  wave: OscillatorType,
+  baseFrequency: number,
+  gain: number,
+  pulseMinMs: number,
+  pulseMaxMs: number,
+  urgencyCurve: UrgencyCurve,
+  filter: BiquadFilterType,
+  filterFrequency: number,
+  harmonics: number[],
+): AudioCueProfile {
+  return { material, wave, baseFrequency, gain, pulseMinMs, pulseMaxMs, urgencyCurve, filter, filterFrequency, harmonics };
+}
+
+function pulseAmount(now: number, profile: AudioCueProfile, proximity: number): number {
+  const urgency = profile.urgencyCurve === "stable" ? proximity : Math.min(1, proximity * 1.25);
+  const interval = lerp(profile.pulseMaxMs, profile.pulseMinMs, urgency) / 1000;
+  const phase = (now % interval) / interval;
+  if (profile.urgencyCurve === "critical") return phase < 0.48 ? 1 : 0.18;
+  if (profile.urgencyCurve === "approach") return phase < 0.35 ? 1 : 0.28;
+  return 0.45 + 0.55 * Math.sin(phase * Math.PI) ** 2;
+}
+
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * Math.max(0, Math.min(1, t));
 }
 
 function setPannerPosition(panner: PannerNode, x: number, y: number, z: number): void {

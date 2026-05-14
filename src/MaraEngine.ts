@@ -30,6 +30,7 @@ export class MaraEngine {
   private queue: { line: string; priority: ThreatLevel }[] = [];
   private speaking = false;
   private muted = false;
+  private volume = 1;
   private lastTacticalAt = 0;
 
   constructor(private readonly onLine: (line: string) => void) {
@@ -42,6 +43,10 @@ export class MaraEngine {
   setMuted(muted: boolean): void {
     this.muted = muted;
     if (muted && "speechSynthesis" in window) window.speechSynthesis.cancel();
+  }
+
+  setVolume(volume: number): void {
+    this.volume = Math.max(0, Math.min(1, volume));
   }
 
   speak(line: string, priority: ThreatLevel = ThreatLevel.Tactical): void {
@@ -115,6 +120,7 @@ export class MaraEngine {
     utterance.voice = this.voice;
     utterance.rate = priority === ThreatLevel.Critical ? 1.12 : 0.96;
     utterance.pitch = priority === ThreatLevel.Critical ? 0.9 : 1.02;
+    utterance.volume = this.volume;
     utterance.onend = () => {
       this.speaking = false;
       const next = this.queue.shift();

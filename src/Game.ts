@@ -35,6 +35,7 @@ import {
   Rect,
   SpatialResult,
   ThreatLevel,
+  AudioSettings,
 } from "./types";
 
 interface GameUi {
@@ -59,6 +60,13 @@ export class Game {
   private fireballs: FireballEntity[] = [];
   private muted = false;
   private wraithSilence = false;
+  private readonly settings: AudioSettings = {
+    effectsVolume: 1,
+    speechVolume: 1,
+    monoMode: false,
+    verboseMara: false,
+    reducedThreatSpeed: false,
+  };
 
   constructor(
     private readonly input: Input,
@@ -67,6 +75,7 @@ export class Game {
   ) {
     this.mara = new MaraEngine((line) => this.ui.setMaraLine(line));
     this.threatBus = new ThreatBus(this.mara, this.aria, this.audio);
+    this.applyAudioSettings();
     this.depth = Number(localStorage.getItem("depth-record") ?? "1") || 1;
     this.ui.setDepth(1);
     this.ui.setState("MENU");
@@ -83,6 +92,7 @@ export class Game {
     this.ui.setState(this.statusLine());
     this.aria.logEvent("Game started. Level 1. Listen for Mara.");
     this.mara.onDepthChange(this.depth);
+    this.playTrainingSequence();
     this.lastFrameAt = performance.now();
     this.loop(this.lastFrameAt);
   }
@@ -106,6 +116,7 @@ export class Game {
   private update(now: number, dt: number): void {
     if (this.input.consume("pause")) this.togglePause();
     if (this.input.consume("mute")) this.toggleMute();
+    this.updateSettingsInput();
     if (this.state !== GameState.Playing && this.state !== GameState.Shop) return;
     if (this.state === GameState.Shop) {
       this.updateShop();
@@ -151,6 +162,7 @@ export class Game {
   }
 
   private updateWorld(now: number, dt: number): void {
+    const threatDt = this.settings.reducedThreatSpeed ? dt * 0.65 : dt;
     for (const debris of this.level.debris) {
       if (!debris.active) continue;
       if (!debris.warned && now >= debris.warnStartedAt) {
@@ -168,8 +180,9 @@ export class Game {
           });
         }
       }
-      updateDebris(debris, now, dt);
-      if (now > debris.impactAt || debris.y >= WORLD_FLOOR_Y - debris.height) {
+      updateDebris(debris, now, threatDt);
+      const impactDeadline = debris.impactAt + (this.settings.reducedThreatSpeed ? 900 : 0);
+      if (now > impactDeadline || debris.y >= WORLD_FLOOR_Y - debris.height) {
         debris.active = false;
         this.audio.playSignature(EntityType.Debris, spatialPan(debris, this.rex.body));
       }
@@ -183,7 +196,7 @@ export class Game {
 
     for (const enemy of this.level.enemies) {
       if (!enemy.active) continue;
-      updateEnemy(enemy, this.rex.body, dt);
+      updateEnemy(enemy, this.rex.body, threatDt);
     }
 
     for (const fireball of this.fireballs) {
@@ -330,8 +343,10 @@ export class Game {
     this.lastPingAt = now;
     const results = this.spatialResults();
     this.audio.emitEcholocationPing(results);
-    const line = this.mara.onEcholocationResult(results);
-    this.aria.logEvent(`Echolocation: ${line}`);
+    if (this.settings.verboseMara) {
+      const line = this.mara.onEcholocationResult(results);
+      this.aria.logEvent(`Echolocation: ${line}`);
+    }
   }
 
   private fire(now: number): void {
@@ -454,6 +469,56 @@ export class Game {
     this.aria.logEvent(this.muted ? "Audio muted." : "Audio unmuted.");
   }
 
+  private updateSettingsInput(): void {
+    if (this.input.consume("mono")) {
+      this.settings.monoMode = !this.settings.monoMode;
+      this.applyAudioSettings();
+      this.aria.logEvent(this.settings.monoMode ? "Mono spatial mode on." : "Stereo spatial mode on.");
+    }
+    if (this.input.consume("verbose")) {
+      this.settings.verboseMara = !this.settings.verboseMara;
+      this.applyAudioSettings();
+      this.aria.logEvent(this.settings.verboseMara ? "Verbose Mara on." : "Verbose Mara off.");
+    }
+    if (this.input.consume("reducedThreatSpeed")) {
+      this.settings.reducedThreatSpeed = !this.settings.reducedThreatSpeed;
+      this.applyAudioSettings();
+      this.aria.logEvent(this.settings.reducedThreatSpeed ? "Reduced threat speed on." : "Reduced threat speed off.");
+    }
+    if (this.input.consume("effectsDown")) this.adjustEffects(-0.1);
+    if (this.input.consume("effectsUp")) this.adjustEffects(0.1);
+    if (this.input.consume("speechDown")) this.adjustSpeech(-0.1);
+    if (this.input.consume("speechUp")) this.adjustSpeech(0.1);
+  }
+
+  private adjustEffects(delta: number): void {
+    this.settings.effectsVolume = clamp01(this.settings.effectsVolume + delta);
+    this.applyAudioSettings();
+    this.aria.logEvent(`Effects volume ${Math.round(this.settings.effectsVolume * 100)} percent.`);
+  }
+
+  private adjustSpeech(delta: number): void {
+    this.settings.speechVolume = clamp01(this.settings.speechVolume + delta);
+    this.applyAudioSettings();
+    this.aria.logEvent(`Speech volume ${Math.round(this.settings.speechVolume * 100)} percent.`);
+  }
+
+  private applyAudioSettings(): void {
+    this.audio.setSettings(this.settings);
+    this.mara.setVolume(this.settings.speechVolume);
+  }
+
+  private playTrainingSequence(): void {
+    this.mara.speak(
+      "Sound check. Hear the exit beacon, crystal shimmer, crawler scrape, and rock crackle. Press Q to scan with those same sounds.",
+      ThreatLevel.Tactical,
+    );
+    window.setTimeout(() => this.audio.playSignature(EntityType.Exit, -260), 700);
+    window.setTimeout(() => this.audio.playSignature(EntityType.Crystal, 260), 1150);
+    window.setTimeout(() => this.audio.playSignature(EntityType.Crawler, -160), 1600);
+    window.setTimeout(() => this.audio.playDebrisWarning(0, 1), 2050);
+  }
+
   private statusLine(): string {
     return `${this.state} — Level ${this.depth} — HP ${this.rex.stats.hp} — Gems ${this.rex.stats.gems}`;
   }
@@ -489,4 +554,8 @@ function readableThreat(type: EntityType): string {
   if (type === EntityType.Wraith) return "Wraith";
   if (type === EntityType.Boss) return "Boss";
   return "Threat";
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, Number(value.toFixed(2))));
 }

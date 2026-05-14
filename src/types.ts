@@ -138,3 +138,11 @@ export interface ThreatEvent {
   direction?: Direction;
   at: number;
 }
+
+export interface AudioSettings {
+  effectsVolume: number;
+  speechVolume: number;
+  monoMode: boolean;
+  verboseMara: boolean;
+  reducedThreatSpeed: boolean;
+}

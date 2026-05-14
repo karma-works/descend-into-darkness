@@ -47,9 +47,9 @@ Each level is deeper, darker, and more hostile. Mara gets quieter. The cave gets
 
 ### What you hear
 
-- **Spatial audio** — every entity (enemy, debris, crystal, exit) has a distinct sound positioned in stereo space. Left means left. Right means right. High pitch means above you. Low pitch means below.
-- **Echolocation** — press `Q` to emit a directional ping. The cave responds with the position of everything nearby.
-- **Dr. Mara Voss** — she speaks warnings, reads the space after your echolocation ping, narrates your death, guides you through the shop. Her voice changes as you go deeper.
+- **Spatial audio grammar** — every entity communicates four things at once: identity through sound material, direction through stereo position, distance through volume and pulse rate, and urgency through rhythm.
+- **Echolocation** — press `Q` to emit a directional ping. Nearby entities answer with their own sound signatures, sequenced nearest-first.
+- **Dr. Mara Voss** — she teaches the sound grammar, narrates your death, guides you through the shop, and can optionally summarize echolocation when verbose mode is enabled.
 - **Silence** — the most dangerous sound in the game.
 
 ---
@@ -66,8 +66,13 @@ Each level is deeper, darker, and more hostile. Mara gets quieter. The cave gets
 | Talk to Merchant | `E` |
 | Pause | `Escape` |
 | Mute | `M` |
+| Toggle mono spatial mode | `B` |
+| Toggle verbose Mara | `V` |
+| Toggle reduced threat speed | `R` |
+| Effects volume | `[` / `]` |
+| Speech volume | `;` / `'` |
 
-**Recommended: headphones.** Stereo separation is how the game communicates spatial information. Mono speakers significantly reduce playability.
+**Recommended: headphones.** Stereo separation is how the game communicates spatial information. Mono mode exists for players with single-ear hearing or speaker constraints, but it necessarily removes left/right play.
 
 ---
 
@@ -116,6 +121,7 @@ This game targets the **ARIA Authoring Practices Guide** for assistive technolog
 - All controls reachable via keyboard, no mouse required
 - Web Speech API (SpeechSynthesis) for Mara's voice
 - Web Audio API spatial encoding for gameplay information
+- Optional mono mode, verbose Mara, reduced threat speed, and separate speech/effects volume controls
 - No canvas — the HTML document is the game interface
 
 **Screen reader testing:** local ARIA structure is implemented; independent VoiceOver, NVDA, and JAWS gameplay feedback is still needed.

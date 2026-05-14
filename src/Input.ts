@@ -7,6 +7,13 @@ export interface InputState {
   interact: boolean;
   pause: boolean;
   mute: boolean;
+  mono: boolean;
+  verbose: boolean;
+  reducedThreatSpeed: boolean;
+  effectsDown: boolean;
+  effectsUp: boolean;
+  speechDown: boolean;
+  speechUp: boolean;
 }
 
 const DEFAULT_STATE: InputState = {
@@ -18,6 +25,13 @@ const DEFAULT_STATE: InputState = {
   interact: false,
   pause: false,
   mute: false,
+  mono: false,
+  verbose: false,
+  reducedThreatSpeed: false,
+  effectsDown: false,
+  effectsUp: false,
+  speechDown: false,
+  speechUp: false,
 };
 
 export class Input {
@@ -80,6 +94,20 @@ export class Input {
         return "pause";
       case "KeyM":
         return "mute";
+      case "KeyB":
+        return "mono";
+      case "KeyV":
+        return "verbose";
+      case "KeyR":
+        return "reducedThreatSpeed";
+      case "BracketLeft":
+        return "effectsDown";
+      case "BracketRight":
+        return "effectsUp";
+      case "Semicolon":
+        return "speechDown";
+      case "Quote":
+        return "speechUp";
       default:
         return undefined;
     }
