@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Descend into Darkness — Audio Platformer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #000;
+      --fg: #ccc;
+      --accent: #88aaff;
+      --danger: #cc2200;
+      --muted: #555;
+      --font: 'Courier New', Courier, monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    /* Screen-reader-only utility — hides visually, preserves for AT */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    #game-shell {
+      width: 100%;
+      max-width: 640px;
+    }
+
+    #title {
+      font-size: 1.5rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.25rem;
+    }
+
+    #subtitle {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 2rem;
+    }
+
+    #status-panel {
+      border: 1px solid #222;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+      min-height: 80px;
+    }
+
+    #depth-line {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    #mara-display {
+      font-style: italic;
+      color: var(--accent);
+      font-size: 0.9rem;
+      min-height: 1.4em;
+    }
+
+    #state-display {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.5rem;
+    }
+
+    #controls-hint {
+      font-size: 0.7rem;
+      color: var(--muted);
+      border-top: 1px solid #111;
+      padding-top: 0.75rem;
+      line-height: 1.8;
+    }
+
+    #focus-trap {
+      position: absolute;
+      opacity: 0;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+    }
+
+    #focus-trap:focus {
+      /* Show a visible focus ring for sighted keyboard users */
+      outline: 2px solid var(--accent);
+      outline-offset: 4px;
+      opacity: 1;
+      position: static;
+      width: auto;
+      height: auto;
+      padding: 0.25rem 0.5rem;
+      background: transparent;
+      color: var(--accent);
+      font-family: var(--font);
+      font-size: 0.7rem;
+      border: none;
+    }
+
+    #ping-indicator {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 0.25rem;
+    }
+
+    #ping-indicator.ready { color: var(--accent); }
+    #ping-indicator.cooldown { color: var(--danger); }
+  </style>
+</head>
+<body>
+
+  <!--
+    ARIA ARCHITECTURE:
+    - role="application" tells screen readers keyboard is managed by the app
+    - #event-log (role="log", polite) receives discrete game events
+    - #mara-alert (role="alert", assertive) receives critical warnings only
+    Both are visually hidden but announced by screen readers.
+  -->
+
+  <!-- Discrete event log — polite, never floods the queue -->
+  <div
+    id="event-log"
+    role="log"
+    aria-live="polite"
+    aria-atomic="false"
+    aria-label="Game events"
+    class="sr-only"
+  ></div>
+
+  <!-- Critical alert — assertive, interrupts screen reader -->
+  <div
+    id="mara-alert"
+    role="alert"
+    aria-live="assertive"
+    aria-atomic="true"
+    class="sr-only"
+  ></div>
+
+  <main
+    id="game-shell"
+    role="application"
+    aria-label="Descend into Darkness — audio platformer. Use headphones for best experience."
+  >
+    <h1 id="title">Descend into Darkness</h1>
+    <p id="subtitle">A blind-first audio platformer &mdash; navigate by sound</p>
+
+    <!-- Visual status panel (secondary — for sighted observers) -->
+    <div id="status-panel" aria-hidden="true">
+      <div id="depth-line">Depth: —</div>
+      <div id="mara-display">Press Space or Enter to begin.</div>
+      <div id="state-display"></div>
+    </div>
+
+    <!-- Echolocation ping readiness indicator -->
+    <div id="ping-indicator" class="ready" aria-hidden="true">[ Q ] Echolocation — ready</div>
+
+    <!-- Controls reference -->
+    <div id="controls-hint" aria-hidden="true">
+      ← → Move &nbsp;|&nbsp; Space Jump &nbsp;|&nbsp; F Fire &nbsp;|&nbsp; Q Echolocation &nbsp;|&nbsp; E Interact &nbsp;|&nbsp; Esc Pause &nbsp;|&nbsp; M Mute
+    </div>
+
+    <!--
+      Keyboard focus trap for the game.
+      When focused, this element absorbs all keydown events for the game loop.
+      Screen readers: virtual cursor mode suspended inside role="application".
+    -->
+    <div
+      id="focus-trap"
+      tabindex="0"
+      aria-label="Game active. Arrow keys to move, Space to jump, F to fire, Q for echolocation ping."
+    ></div>
+  </main>
+
+  <script type="module" src="bundle.js"></script>
+</body>
+</html>
