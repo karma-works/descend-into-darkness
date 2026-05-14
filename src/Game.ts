@@ -158,13 +158,15 @@ export class Game {
         const pan = spatialPan(debris, this.rex.body);
         const overheadness = 1 - Math.min(1, Math.abs(centerX(debris) - centerX(this.rex.body)) / 360);
         this.audio.playDebrisWarning(pan, overheadness);
-        this.threatBus.emit({
-          level: overheadness > 0.75 ? ThreatLevel.Critical : ThreatLevel.Tactical,
-          message: overheadness > 0.75 ? "Rock overhead. Move." : "Debris falling off center.",
-          type: EntityType.Debris,
-          direction: directionFrom(debris, this.rex.body),
-          at: now,
-        });
+        if (overheadness > 0.75) {
+          this.threatBus.emit({
+            level: ThreatLevel.Critical,
+            message: "Rock overhead. Move.",
+            type: EntityType.Debris,
+            direction: directionFrom(debris, this.rex.body),
+            at: now,
+          });
+        }
       }
       updateDebris(debris, now, dt);
       if (now > debris.impactAt || debris.y >= WORLD_FLOOR_Y - debris.height) {
