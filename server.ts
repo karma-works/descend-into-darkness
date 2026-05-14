@@ -1,6 +1,6 @@
 import { join } from "path";
 
-const PORT = 3000;
+const PORT = Number(Bun.env.PORT ?? 3000);
 const PUBLIC_DIR = join(import.meta.dir, "public");
 const SRC_ENTRY = join(import.meta.dir, "src", "main.ts");
 
@@ -8,6 +8,7 @@ console.log(`Descend into Darkness dev server running at http://localhost:${PORT
 
 Bun.serve({
   port: PORT,
+  hostname: "127.0.0.1",
   async fetch(req) {
     const url = new URL(req.url);
     const path = url.pathname;

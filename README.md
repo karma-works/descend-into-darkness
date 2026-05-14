@@ -118,7 +118,7 @@ This game targets the **ARIA Authoring Practices Guide** for assistive technolog
 - Web Audio API spatial encoding for gameplay information
 - No canvas — the HTML document is the game interface
 
-**Screen readers tested:** VoiceOver (macOS), NVDA (Windows)  
+**Screen reader testing:** local ARIA structure is implemented; independent VoiceOver, NVDA, and JAWS gameplay feedback is still needed.
 **Note:** For real-time gameplay, Web Audio spatial audio is the primary information channel. Screen reader live regions carry discrete events (things that happened once), not continuous state. This is by design — continuous state in live regions floods the screen reader queue.
 
 ---

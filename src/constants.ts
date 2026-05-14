@@ -1,0 +1,24 @@
+export const TILE_SIZE = 48;
+export const LEVEL_WIDTH = 64;
+export const LEVEL_HEIGHT = 16;
+export const GRAVITY = 0.55;
+export const REX_SPEED = 4;
+export const JUMP_FORCE = 11;
+export const DOUBLE_JUMP_FORCE = 10;
+export const MAX_FALL_SPEED = 15;
+export const DEBRIS_WARN_MS = 1800;
+export const ECHOLOCATION_COOLDOWN_MS = 2000;
+export const MARA_TACTICAL_DEBOUNCE_MS = 400;
+export const ARIA_EVENT_DEBOUNCE_MS = 500;
+export const HEARING_RANGE = 800;
+export const AMBIENT_SUPPRESSION_RANGE = 300;
+export const BOSS_LEVEL_INTERVAL = 5;
+export const CRAWLER_BPM = 80;
+export const BAT_BPM = 200;
+
+export const PLAYER_WIDTH = 34;
+export const PLAYER_HEIGHT = 42;
+export const ENTITY_SIZE = 32;
+export const WORLD_FLOOR_Y = 12 * TILE_SIZE;
+export const STARTING_HP = 3;
+export const FIRE_COOLDOWN_MS = 650;
