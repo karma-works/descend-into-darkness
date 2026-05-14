@@ -1,0 +1,14 @@
+{
+  "name": "descend-into-darkness",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "bun run server.ts",
+    "build": "bun build src/main.ts --outfile public/bundle.js --minify",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
