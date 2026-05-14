@@ -1,3 +1,5 @@
+![Descend into Darkness — a T-rex silhouette with a glowing orange eye and concentric sound wave arcs on a dark cave background](public/logo.svg)
+
 # Descend into Darkness
 
 **A blind-first audio platformer. Descend. Survive. Listen.**
