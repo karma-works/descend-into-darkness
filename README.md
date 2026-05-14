@@ -5,6 +5,8 @@
 > Rex the dinosaur and Dr. Mara Voss descend into a cave that gets darker with every level.  
 > The darkness is not a bug. It is the game. You navigate by sound.
 
+**[▶ Play Live Demo](https://karma-works.github.io/descend-into-darkness/)**
+
 ---
 
 ## A message to blind players
@@ -27,7 +29,7 @@ This is my first attempt at a game for blind players. I'm sure I got things wron
 There is no wrong answer. You are not a test case. You are shaping what this game becomes.
 
 **[Open a feedback issue →](https://github.com/karma-works/descend-into-darkness/issues/new?labels=blind-player-feedback&title=Blind+player+feedback)**  
-Or email: haegele.markus@gmail.com
+Or email: christian@haegele.dev
 
 I read everything.
 
