@@ -119,7 +119,7 @@ This game targets the **ARIA Authoring Practices Guide** for assistive technolog
 - `role="log"` ARIA live region for discrete game events (checkpoint, treasure, death narration)
 - `role="alert"` ARIA live region for critical warnings
 - All controls reachable via keyboard, no mouse required
-- Web Speech API (SpeechSynthesis) for Mara's voice
+- Pre-rendered Mara voice assets for authored character lines, with Web Speech API fallback
 - Web Audio API spatial encoding for gameplay information
 - Optional mono mode, verbose Mara, reduced threat speed, and separate speech/effects volume controls
 - No canvas — the HTML document is the game interface
@@ -135,8 +135,8 @@ This game targets the **ARIA Authoring Practices Guide** for assistive technolog
 |---|---|
 | **Runtime / Bundler** | [Bun](https://bun.sh/) |
 | **Language** | TypeScript (strict) |
-| **Audio** | Web Audio API (procedural, no asset files) |
-| **Voice** | Web Speech API (SpeechSynthesis — Mara's voice) |
+| **Audio** | Web Audio API (procedural gameplay audio + authored Mara clip playback) |
+| **Voice** | Pre-rendered Mara assets for authored lines; Web Speech API for fallback and dynamic tactical speech |
 | **UI** | HTML5 + ARIA (no canvas) |
 | **Persistence** | `localStorage` (depth record) |
 
@@ -176,7 +176,9 @@ descend-into-darkness/
 │   ├── Input.ts          Keyboard handler
 │   ├── ThreatBus.ts      Priority queue for audio events
 │   ├── SpatialAudio.ts   Web Audio API — spatial positioning, echolocation
-│   ├── MaraEngine.ts     Dr. Mara Voss — arc-aware TTS narration
+│   ├── MaraEngine.ts     Dr. Mara Voss — arc-aware narration router
+│   ├── MaraLines.ts      Authored Mara line manifest
+│   ├── MaraVoicePlayer.ts Centered Web Audio playback for rendered Mara lines
 │   ├── ARIALog.ts        Discrete event announcer
 │   ├── Level.ts          Procedural cave level generator
 │   ├── Physics.ts        Real-time physics

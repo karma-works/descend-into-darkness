@@ -51,7 +51,9 @@ Mara is simultaneously:
 
 ### Implementation
 
-Mara's voice is delivered via **Web Speech API (SpeechSynthesis)**. Her lines are written, not generated. An `arc` property on `MaraEngine` tracks current depth and emotional state; line selection draws from arc-appropriate pools.
+Mara's authored character lines are routed through stable line IDs so they can be delivered as pre-rendered voice assets. If a rendered asset is missing or fails to load, `MaraEngine` falls back to **Web Speech API (SpeechSynthesis)**. Dynamic tactical lines, such as echolocation summaries and procedural shop inventory text, continue to use browser TTS.
+
+Her lines are written, not generated. An `arc` property on `MaraEngine` tracks current depth and emotional state; line selection draws from arc-appropriate pools.
 
 **Priority:** Mara never speaks over a CRITICAL audio event (impact imminent, contact hit). She speaks in TACTICAL windows — between player actions. She does not narrate continuously. Silence is part of her character design.
 

@@ -1,37 +1,17 @@
 import { MARA_TACTICAL_DEBOUNCE_MS } from "./constants";
+import { lineForDepth, linesForDepth, MARA_LINES, MaraLineId } from "./MaraLines";
+import { MaraVoicePlayer } from "./MaraVoicePlayer";
 import { EntityType, ShopItem, SpatialResult, ThreatLevel } from "./types";
-
-const LINES_SURVEY = [
-  "Rex. Stay close. And listen.",
-  "Good. The cave is answering you now.",
-  "That echo is not decoration. It is the map.",
-];
-
-const LINES_DARK = [
-  "Torch is gone. We are doing this your way now.",
-  "I can hear the walls before I can see them. I hate how useful that is.",
-  "The air changed. I am going to pretend that is normal fieldwork.",
-];
-
-const LINES_DESCENT = [
-  "Do not wait for me to name it. Move when the cave goes quiet.",
-  "Something learned our rhythm. Change it.",
-  "Rex, ping first. I am not guessing down here.",
-];
-
-const LINES_BOSS = [
-  "I have seen this before. In the fossil record.",
-  "No jokes now. Listen for the breath.",
-  "When it inhales, leave the center.",
-];
 
 export class MaraEngine {
   private voice: SpeechSynthesisVoice | null = null;
-  private queue: { line: string; priority: ThreatLevel }[] = [];
+  private readonly voicePlayer = new MaraVoicePlayer();
+  private queue: { text: string; priority: ThreatLevel; lineId?: MaraLineId }[] = [];
   private speaking = false;
   private muted = false;
   private volume = 1;
   private lastTacticalAt = 0;
+  private playbackToken = 0;
 
   constructor(private readonly onLine: (line: string) => void) {
     if ("speechSynthesis" in window) {
@@ -42,41 +22,64 @@ export class MaraEngine {
 
   setMuted(muted: boolean): void {
     this.muted = muted;
-    if (muted && "speechSynthesis" in window) window.speechSynthesis.cancel();
+    this.voicePlayer.setMuted(muted);
+    if (muted) {
+      this.playbackToken += 1;
+      this.speaking = false;
+      this.queue = [];
+      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    }
   }
 
   setVolume(volume: number): void {
     this.volume = Math.max(0, Math.min(1, volume));
+    this.voicePlayer.setVolume(this.volume);
+  }
+
+  preloadForDepth(depth: number): void {
+    for (const id of linesForDepth(depth)) this.voicePlayer.preload(id);
+  }
+
+  speakLine(id: MaraLineId, priority: ThreatLevel = MARA_LINES[id].priority): void {
+    const line = MARA_LINES[id];
+    this.speakText(line.text, priority, id);
   }
 
   speak(line: string, priority: ThreatLevel = ThreatLevel.Tactical): void {
-    this.onLine(line);
-    if (this.muted || !("speechSynthesis" in window)) return;
+    this.speakText(line, priority);
+  }
+
+  private speakText(text: string, priority: ThreatLevel = ThreatLevel.Tactical, lineId?: MaraLineId): void {
+    this.onLine(text);
+    if (this.muted) return;
 
     if (priority === ThreatLevel.Critical) {
-      window.speechSynthesis.cancel();
+      this.playbackToken += 1;
+      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+      this.voicePlayer.cancel();
       this.queue = [];
-      this.sayNow(line, priority);
+      this.sayNow(text, priority, lineId);
       return;
     }
 
     const now = performance.now();
     if (priority === ThreatLevel.Tactical && now - this.lastTacticalAt < MARA_TACTICAL_DEBOUNCE_MS) {
-      this.queue.push({ line, priority });
+      this.queue.push({ text, priority, lineId });
       return;
     }
 
     if (this.speaking) {
-      this.queue.push({ line, priority });
+      this.queue.push({ text, priority, lineId });
       return;
     }
 
-    this.sayNow(line, priority);
+    this.sayNow(text, priority, lineId);
   }
 
   onDepthChange(depth: number): void {
-    const pool = this.linesForDepth(depth);
-    this.speak(pool[(depth - 1) % pool.length], ThreatLevel.Tactical);
+    this.preloadForDepth(depth);
+    this.preloadForDepth(depth + 1);
+    this.speakLine(lineForDepth(depth), ThreatLevel.Tactical);
   }
 
   onDeath(cause: string, direction: string, missedSignal: string): string {
@@ -112,23 +115,42 @@ export class MaraEngine {
   }
 
   onSilence(): void {
-    this.speak("...", ThreatLevel.Tactical);
+    this.speakLine("wraith-silence-01", ThreatLevel.Tactical);
   }
 
-  private sayNow(line: string, priority: ThreatLevel): void {
+  private sayNow(text: string, priority: ThreatLevel, lineId?: MaraLineId): void {
+    this.speaking = true;
+    this.lastTacticalAt = performance.now();
+    const token = ++this.playbackToken;
+    if (lineId) {
+      void this.voicePlayer.play(lineId, () => this.finishLine(), () => token === this.playbackToken).then((result) => {
+        if (result === "fallback" && token === this.playbackToken) this.sayWithBrowser(text, priority);
+      });
+      return;
+    }
+
+    this.sayWithBrowser(text, priority);
+  }
+
+  private sayWithBrowser(line: string, priority: ThreatLevel): void {
+    if (!("speechSynthesis" in window)) {
+      this.finishLine();
+      return;
+    }
     const utterance = new SpeechSynthesisUtterance(line);
     utterance.voice = this.voice;
     utterance.rate = priority === ThreatLevel.Critical ? 1.12 : 0.96;
     utterance.pitch = priority === ThreatLevel.Critical ? 0.9 : 1.02;
     utterance.volume = this.volume;
-    utterance.onend = () => {
-      this.speaking = false;
-      const next = this.queue.shift();
-      if (next) this.speak(next.line, next.priority);
-    };
-    this.speaking = true;
-    this.lastTacticalAt = performance.now();
+    utterance.onend = () => this.finishLine();
+    utterance.onerror = () => this.finishLine();
     window.speechSynthesis.speak(utterance);
+  }
+
+  private finishLine(): void {
+    this.speaking = false;
+    const next = this.queue.shift();
+    if (next) this.speakText(next.text, next.priority, next.lineId);
   }
 
   private pickVoice(): void {
@@ -140,12 +162,6 @@ export class MaraEngine {
       null;
   }
 
-  private linesForDepth(depth: number): string[] {
-    if (depth % 5 === 0) return LINES_BOSS;
-    if (depth >= 9) return LINES_DESCENT;
-    if (depth >= 5) return LINES_DARK;
-    return LINES_SURVEY;
-  }
 }
 
 function readableEntity(type: EntityType): string {

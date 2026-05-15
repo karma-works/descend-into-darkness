@@ -1,0 +1,19 @@
+[
+  { "id": "survey-01", "text": "Rex. Stay close. And listen.", "arc": "survey", "priority": "TACTICAL", "target": "survey-01.ogg" },
+  { "id": "survey-02", "text": "Good. The cave is answering you now.", "arc": "survey", "priority": "TACTICAL", "target": "survey-02.ogg" },
+  { "id": "survey-03", "text": "That echo is not decoration. It is the map.", "arc": "survey", "priority": "TACTICAL", "target": "survey-03.ogg" },
+  { "id": "dark-01", "text": "Torch is gone. We are doing this your way now.", "arc": "dark", "priority": "TACTICAL", "target": "dark-01.ogg" },
+  { "id": "dark-02", "text": "I can hear the walls before I can see them. I hate how useful that is.", "arc": "dark", "priority": "TACTICAL", "target": "dark-02.ogg" },
+  { "id": "dark-03", "text": "The air changed. I am going to pretend that is normal fieldwork.", "arc": "dark", "priority": "TACTICAL", "target": "dark-03.ogg" },
+  { "id": "descent-01", "text": "Do not wait for me to name it. Move when the cave goes quiet.", "arc": "descent", "priority": "TACTICAL", "target": "descent-01.ogg" },
+  { "id": "descent-02", "text": "Something learned our rhythm. Change it.", "arc": "descent", "priority": "TACTICAL", "target": "descent-02.ogg" },
+  { "id": "descent-03", "text": "Rex, ping first. I am not guessing down here.", "arc": "descent", "priority": "TACTICAL", "target": "descent-03.ogg" },
+  { "id": "boss-01", "text": "I have seen this before. In the fossil record.", "arc": "boss", "priority": "TACTICAL", "target": "boss-01.ogg" },
+  { "id": "boss-02", "text": "No jokes now. Listen for the breath.", "arc": "boss", "priority": "TACTICAL", "target": "boss-02.ogg" },
+  { "id": "boss-03", "text": "When it inhales, leave the center.", "arc": "boss", "priority": "TACTICAL", "target": "boss-03.ogg" },
+  { "id": "boss-defeated-01", "text": "The breathing stopped. I am choosing to enjoy that.", "arc": "boss", "priority": "TACTICAL", "target": "boss-defeated-01.ogg" },
+  { "id": "complete-01", "text": "Ten levels. We are alive. That is not the same as safe.", "arc": "system", "priority": "TACTICAL", "target": "complete-01.ogg" },
+  { "id": "shield-broken-01", "text": "Shield gone. Useful while it lasted.", "arc": "system", "priority": "CRITICAL", "target": "shield-broken-01.ogg" },
+  { "id": "sound-check-01", "text": "Sound check. Hear the exit beacon, crystal shimmer, crawler scrape, and rock crackle. Press Q to scan with those same sounds.", "arc": "system", "priority": "TACTICAL", "target": "sound-check-01.ogg" },
+  { "id": "wraith-silence-01", "text": "...", "arc": "descent", "priority": "TACTICAL", "target": "wraith-silence-01.ogg" }
+]

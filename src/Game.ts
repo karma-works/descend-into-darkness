@@ -267,7 +267,7 @@ export class Game {
           boss.active = false;
           this.audio.removeEntity(boss.id);
           this.aria.logEvent("Boss defeated. The breathing stopped.");
-          this.mara.speak("The breathing stopped. I am choosing to enjoy that.", ThreatLevel.Tactical);
+          this.mara.speakLine("boss-defeated-01", ThreatLevel.Tactical);
         }
       }
     }
@@ -393,7 +393,7 @@ export class Game {
     if (this.rex.stats.shield) {
       this.rex.stats.shield = false;
       this.aria.logEvent("Shield shattered. Rex survives the hit.");
-      this.mara.speak("Shield gone. Useful while it lasted.", ThreatLevel.Critical);
+      this.mara.speakLine("shield-broken-01", ThreatLevel.Critical);
       return;
     }
 
@@ -432,7 +432,7 @@ export class Game {
     if (this.depth > 10) {
       this.state = GameState.Complete;
       this.ui.setState("COMPLETE — press Space to restart");
-      this.mara.speak("Ten levels. We are alive. That is not the same as safe.", ThreatLevel.Tactical);
+      this.mara.speakLine("complete-01", ThreatLevel.Tactical);
       cancelAnimationFrame(this.animationFrame);
       return;
     }
@@ -509,10 +509,7 @@ export class Game {
   }
 
   private playTrainingSequence(): void {
-    this.mara.speak(
-      "Sound check. Hear the exit beacon, crystal shimmer, crawler scrape, and rock crackle. Press Q to scan with those same sounds.",
-      ThreatLevel.Tactical,
-    );
+    this.mara.speakLine("sound-check-01", ThreatLevel.Tactical);
     window.setTimeout(() => this.audio.playSignature(EntityType.Exit, -260), 700);
     window.setTimeout(() => this.audio.playSignature(EntityType.Crystal, 260), 1150);
     window.setTimeout(() => this.audio.playSignature(EntityType.Crawler, -160), 1600);
