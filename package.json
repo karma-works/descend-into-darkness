@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "bun run server.ts",
     "build": "bun build src/main.ts --outfile public/bundle.js --minify",
+    "voice:generate": "bun run scripts/generate-mara-voice.ts",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit"
   },

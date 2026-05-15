@@ -1,4 +1,4 @@
-import { join } from "path";
+import { extname, join, relative } from "path";
 
 const PORT = Number(Bun.env.PORT ?? 3000);
 const PUBLIC_DIR = join(import.meta.dir, "public");
@@ -36,6 +36,33 @@ Bun.serve({
       });
     }
 
+    const filePath = join(PUBLIC_DIR, path);
+    if (!relative(PUBLIC_DIR, filePath).startsWith("..")) {
+      const file = Bun.file(filePath);
+      if (await file.exists()) {
+        return new Response(file, {
+          headers: { "Content-Type": contentType(filePath) },
+        });
+      }
+    }
+
     return new Response("Not found", { status: 404 });
   },
 });
+
+function contentType(filePath: string): string {
+  switch (extname(filePath)) {
+    case ".html":
+      return "text/html; charset=utf-8";
+    case ".js":
+      return "application/javascript; charset=utf-8";
+    case ".ogg":
+      return "audio/ogg";
+    case ".svg":
+      return "image/svg+xml";
+    case ".json":
+      return "application/json; charset=utf-8";
+    default:
+      return "application/octet-stream";
+  }
+}
