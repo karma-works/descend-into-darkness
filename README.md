@@ -2,7 +2,7 @@
 
 # Descend into Darkness
 
-**A blind-first audio platformer. Descend. Survive. Listen.**
+**Archived experiment: a blind-first audio platformer. Descend. Survive. Listen.**
 
 > Rex the dinosaur and Dr. Mara Voss descend into a cave that gets darker with every level.  
 > The darkness is not a bug. It is the game. You navigate by sound.
@@ -11,29 +11,51 @@
 
 ---
 
-## A message to blind players
+## Project Status
 
-**This game was built for you first.**
+This project is archived.
 
-I'm a sighted developer who became fascinated by the question: what would a platformer feel like if sound was the only sense that mattered? Not "accessible" in the sense of a checkbox — but genuinely designed from the ground up for players who can't see the screen at all.
+The challenge was greater than the ambition. This repository remains available as a record of the prototype, the decisions made, and the lessons learned, but it is not being actively developed.
 
-This is my first attempt at a game for blind players. I'm sure I got things wrong. I'm eager to learn.
+---
 
-**If you try this game — even for five minutes — I would be grateful to hear from you:**
+## Learnings
 
-- What worked? What felt right?
-- What was confusing or impossible?
-- What would make it genuinely enjoyable to play?
-- What assistive tools are you using? (Screen reader, braille display, headphones, speakers?)
-- Is the spatial audio encoding useful, or does it feel arbitrary?
-- Does Dr. Mara Voss's narration help or get in the way?
+### Adapting sighted gameplay is the wrong starting point
 
-There is no wrong answer. You are not a test case. You are shaping what this game becomes.
+Adapting an existing game or gameplay pattern built for sighted players may work for some accessibility layers. It is fundamentally the wrong approach when creating a game for blind players.
 
-**[Open a feedback issue →](https://github.com/karma-works/descend-into-darkness/issues/new?labels=blind-player-feedback&title=Blind+player+feedback)**  
-Or email: christian@haegele.dev
+A platformer relies on fast optical input processing. The equivalent for blind players would be a very fast game that relies entirely on audio input processing. That is possible in theory, but very hard to achieve well. It cannot be treated as "platformer, but with sounds."
 
-I read everything.
+### WCAG AAA is the wrong frame for this problem
+
+WCAG 2.2 Level AAA is not the right standard for this kind of game. It is primarily a standard for accessible page components and static or semi-static web experiences. Real-time games are built around timing, perception, and response under pressure.
+
+WCAG can still inform UI and documentation quality, especially for visually impaired players, but it is not enough to define whether a blind-first game works.
+
+### AI was not enough of a sparring partner
+
+AI was not a sufficiently strong sparring partner for developing a game for blind players. Real users, real playtesting, and lived experience are required.
+
+This project produced plausible architecture and plausible code. That is not the same thing as a good blind-first game.
+
+### Stereo is not enough for spatial understanding
+
+Stereo sound is not sufficient to convey 3D orientation: up, down, left, right, distance, urgency, and identity all compete for the same perceptual channel.
+
+Introducing extra encodings, such as pitch for height, can work, but it feels bolted on unless the entire game is designed around that language from the beginning. New audio concepts must be taught through an audio tutorial, then reinforced through consistent level design.
+
+---
+
+## Assumptions For Future Blind-First Projects
+
+Games for blind players have to start with sound design.
+
+First define the feeling the game should convey. Storytelling comes before mechanics. The experience should be closer to audio drama, music, or interactive soundscape design than a visual game with an accessibility layer added later.
+
+Browser TTS in modern browsers, even in 2026, is not adequate for a game where voice carries emotion and atmosphere. Blind players may already use specialized TTS tools, but game voice has a different job. It must convey feeling, character, pacing, and tension.
+
+Voice should be treated like performance. Sound effects should be treated like worldbuilding. Realistic sounds matter for immersion. The audio system is not an output layer. It is the game.
 
 ---
 
