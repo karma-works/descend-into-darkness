@@ -6,7 +6,11 @@ export class ARIALog {
   private queue: string[] = [];
   private flushTimer: number | undefined;
 
-  constructor(eventLog: HTMLElement | null, alertRegion: HTMLElement | null) {
+  constructor(
+    eventLog: HTMLElement | null,
+    alertRegion: HTMLElement | null,
+    private readonly onVisualEvent?: (message: string, critical: boolean) => void,
+  ) {
     this.eventLog = eventLog;
     this.alertRegion = alertRegion;
   }
@@ -18,6 +22,7 @@ export class ARIALog {
   }
 
   alertCritical(message: string): void {
+    this.onVisualEvent?.(message, true);
     if (!this.alertRegion) return;
     this.alertRegion.textContent = "";
     window.setTimeout(() => {
@@ -31,6 +36,7 @@ export class ARIALog {
       const p = document.createElement("p");
       p.textContent = message;
       this.eventLog.appendChild(p);
+      this.onVisualEvent?.(message, false);
       while (this.eventLog.childElementCount > 30) {
         this.eventLog.firstElementChild?.remove();
       }

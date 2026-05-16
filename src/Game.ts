@@ -43,6 +43,7 @@ interface GameUi {
   setState(line: string): void;
   setDepth(depth: number): void;
   setPingReady(ready: boolean, secondsLeft?: number): void;
+  setMode(mode: string): void;
 }
 
 export class Game {
@@ -506,6 +507,7 @@ export class Game {
   private applyAudioSettings(): void {
     this.audio.setSettings(this.settings);
     this.mara.setVolume(this.settings.speechVolume);
+    this.ui.setMode(this.modeLine());
   }
 
   private playTrainingSequence(): void {
@@ -518,6 +520,13 @@ export class Game {
 
   private statusLine(): string {
     return `${this.state} — Level ${this.depth} — HP ${this.rex.stats.hp} — Gems ${this.rex.stats.gems}`;
+  }
+
+  private modeLine(): string {
+    const spatial = this.settings.monoMode ? "Mono" : "Stereo";
+    const mara = this.settings.verboseMara ? "Verbose" : "Quiet";
+    const threats = this.settings.reducedThreatSpeed ? "Slow" : "Normal";
+    return `${spatial} / ${mara} / ${threats}`;
   }
 }
 
