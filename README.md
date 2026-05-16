@@ -9,6 +9,8 @@
 
 **[▶ Play Live Demo](https://karma-works.github.io/descend-into-darkness/)**
 
+![Screenshot of Descend into Darkness showing the high-contrast low-vision dashboard with large status tiles, Mara subtitle panel, recent events, and keycap controls](docs/screenshot.png)
+
 ---
 
 ## Project Status
