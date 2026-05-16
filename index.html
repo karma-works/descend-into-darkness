@@ -9,23 +9,31 @@
 
     :root {
       --bg: #000;
-      --fg: #ccc;
-      --accent: #88aaff;
-      --danger: #cc2200;
-      --muted: #555;
-      --font: 'Courier New', Courier, monospace;
+      --panel: #080808;
+      --panel-strong: #111;
+      --fg: #f8f8f2;
+      --muted: #d8d8d8;
+      --accent: #00e5ff;
+      --ready: #ffe600;
+      --danger: #ff3b30;
+      --border: #fff;
+      --font: Arial, Helvetica, sans-serif;
     }
+
+    html { font-size: 20px; }
 
     body {
       background: var(--bg);
       color: var(--fg);
       font-family: var(--font);
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem;
+      padding: 1rem;
+      line-height: 1.35;
+    }
+
+    body.critical-flash #game-shell {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 0.35rem var(--danger);
     }
 
     /* Screen-reader-only utility — hides visually, preserves for AT */
@@ -43,89 +51,291 @@
 
     #game-shell {
       width: 100%;
-      max-width: 640px;
+      max-width: 1180px;
+      min-height: calc(100vh - 2rem);
+      margin: 0 auto;
+      border: 0.15rem solid var(--border);
+      background: var(--bg);
+      padding: 1rem;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 1rem;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      border-bottom: 0.1rem solid var(--border);
+      padding-bottom: 0.75rem;
     }
 
     #title {
-      font-size: 1.5rem;
-      letter-spacing: 0.1em;
+      font-size: clamp(1.5rem, 4vw, 2.6rem);
+      letter-spacing: 0;
       text-transform: uppercase;
       color: var(--accent);
-      margin-bottom: 0.25rem;
+      line-height: 1;
     }
 
     #subtitle {
-      font-size: 0.8rem;
+      font-size: 1rem;
       color: var(--muted);
-      margin-bottom: 2rem;
-    }
-
-    #status-panel {
-      border: 1px solid #222;
-      padding: 1rem 1.25rem;
-      margin-bottom: 1rem;
-      min-height: 80px;
-    }
-
-    #depth-line {
-      font-size: 0.75rem;
-      color: var(--muted);
-      margin-bottom: 0.5rem;
-    }
-
-    #mara-display {
-      font-style: italic;
-      color: var(--accent);
-      font-size: 0.9rem;
-      min-height: 1.4em;
-    }
-
-    #state-display {
-      font-size: 0.75rem;
-      color: var(--muted);
-      margin-top: 0.5rem;
-    }
-
-    #controls-hint {
-      font-size: 0.7rem;
-      color: var(--muted);
-      border-top: 1px solid #111;
-      padding-top: 0.75rem;
-      line-height: 1.8;
+      margin-top: 0.35rem;
+      max-width: 32rem;
     }
 
     #focus-trap {
-      position: absolute;
-      opacity: 0;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
+      border: 0.1rem solid var(--accent);
+      color: var(--accent);
+      background: var(--panel);
+      padding: 0.45rem 0.7rem;
+      font-weight: 800;
+      font-size: 0.95rem;
+      min-width: 9rem;
+      text-align: center;
     }
 
     #focus-trap:focus {
-      /* Show a visible focus ring for sighted keyboard users */
-      outline: 2px solid var(--accent);
-      outline-offset: 4px;
-      opacity: 1;
-      position: static;
-      width: auto;
-      height: auto;
-      padding: 0.25rem 0.5rem;
-      background: transparent;
-      color: var(--accent);
-      font-family: var(--font);
-      font-size: 0.7rem;
-      border: none;
+      outline: 0.22rem solid var(--ready);
+      outline-offset: 0.2rem;
+      color: var(--ready);
+      border-color: var(--ready);
     }
 
-    #ping-indicator {
-      font-size: 0.7rem;
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 0.65rem;
+    }
+
+    .status-tile {
+      min-height: 5.2rem;
+      border: 0.1rem solid var(--border);
+      background: var(--panel);
+      padding: 0.65rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .status-label {
       color: var(--muted);
-      margin-top: 0.25rem;
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
     }
 
-    #ping-indicator.ready { color: var(--accent); }
-    #ping-indicator.cooldown { color: var(--danger); }
+    .status-value {
+      color: var(--fg);
+      font-size: clamp(1.35rem, 3.6vw, 2.25rem);
+      font-weight: 900;
+      line-height: 1.05;
+      margin-top: 0.2rem;
+      overflow-wrap: anywhere;
+    }
+
+    #ping-tile.ready {
+      border-color: var(--ready);
+      background: #1a1600;
+    }
+
+    #ping-tile.ready .status-value { color: var(--ready); }
+
+    #ping-tile.cooldown {
+      border-color: var(--danger);
+      background: #1a0505;
+    }
+
+    #ping-tile.cooldown .status-value { color: var(--danger); }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 0.75fr);
+      gap: 1rem;
+      min-height: 0;
+    }
+
+    #status-panel {
+      border: 0.12rem solid var(--accent);
+      background: var(--panel);
+      padding: 1rem;
+      min-height: 14rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .panel-label {
+      color: var(--muted);
+      font-weight: 900;
+      text-transform: uppercase;
+      font-size: 0.95rem;
+      margin-bottom: 0.6rem;
+    }
+
+    #mara-display {
+      color: var(--accent);
+      font-size: clamp(1.7rem, 5vw, 3.15rem);
+      font-weight: 900;
+      line-height: 1.12;
+      min-height: 3.5em;
+      overflow-wrap: anywhere;
+    }
+
+    #visual-event-panel {
+      border: 0.1rem solid var(--border);
+      background: var(--panel);
+      padding: 0.85rem;
+      min-height: 14rem;
+      overflow: hidden;
+    }
+
+    #visual-event-list {
+      list-style: none;
+      display: grid;
+      gap: 0.55rem;
+    }
+
+    #visual-event-list li {
+      border-left: 0.3rem solid var(--accent);
+      background: var(--panel-strong);
+      padding: 0.5rem 0.65rem;
+      color: var(--fg);
+      font-size: 1rem;
+      font-weight: 750;
+      min-height: 2.4rem;
+      display: flex;
+      align-items: center;
+    }
+
+    #visual-event-list li.critical {
+      border-left-color: var(--danger);
+      color: #fff;
+      background: #260606;
+    }
+
+    #controls-hint {
+      border-top: 0.1rem solid var(--border);
+      padding-top: 0.85rem;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 0.6rem;
+    }
+
+    .control {
+      border: 0.1rem solid var(--border);
+      background: var(--panel);
+      min-height: 4rem;
+      padding: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+    }
+
+    .key {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2.7rem;
+      min-height: 2.4rem;
+      padding: 0.25rem 0.45rem;
+      border: 0.1rem solid var(--ready);
+      color: var(--ready);
+      background: #161300;
+      font-size: 1.1rem;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .control span:last-child {
+      color: var(--fg);
+      font-size: 1rem;
+      font-weight: 900;
+    }
+
+    #depth-line,
+    #state-display,
+    #ping-indicator {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 900px) {
+      body { padding: 0.5rem; }
+      #game-shell { min-height: calc(100vh - 1rem); }
+      .topbar { flex-direction: column; }
+      #focus-trap { width: 100%; }
+      .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .main-grid { grid-template-columns: 1fr; }
+      .control-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 520px) {
+      html { font-size: 18px; }
+      .status-grid,
+      .control-grid { grid-template-columns: 1fr; }
+      .status-tile,
+      .control { min-height: 3.6rem; }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      body.critical-flash #game-shell {
+        animation: criticalPulse 650ms ease-out;
+      }
+
+      @keyframes criticalPulse {
+        0%, 100% { box-shadow: 0 0 0 0.15rem var(--danger); }
+        45% { box-shadow: 0 0 0 0.45rem var(--danger); }
+      }
+    }
+
+    #focus-trap .focus-idle {
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 900;
+    }
+
+    #focus-trap:focus .focus-idle {
+      display: none;
+    }
+
+    #focus-trap .focus-active {
+      display: none;
+    }
+
+    #focus-trap:focus .focus-active {
+      display: inline;
+    }
+
+    noscript {
+      display: block;
+      border: 0.15rem solid var(--danger);
+      color: var(--danger);
+      padding: 1rem;
+      font-size: 1.2rem;
+      font-weight: 900;
+    }
+
+    #subtitle strong {
+      color: var(--ready);
+    }
+
+    #mode-value {
+      color: var(--muted);
+      font-size: clamp(1.1rem, 3vw, 1.8rem);
+    }
   </style>
 </head>
 <body>
@@ -162,37 +372,84 @@
     role="application"
     aria-label="Descend into Darkness — audio platformer. Use headphones for best experience."
   >
-    <h1 id="title">Descend into Darkness</h1>
-    <p id="subtitle">A blind-first audio platformer &mdash; navigate by sound</p>
-
-    <!-- Visual status panel (secondary — for sighted observers) -->
-    <div id="status-panel" aria-hidden="true">
-      <div id="depth-line">Depth: —</div>
-      <div id="mara-display">Press Space or Enter to begin.</div>
-      <div id="state-display"></div>
+    <div class="topbar">
+      <div>
+        <h1 id="title">Descend into Darkness</h1>
+        <p id="subtitle">Blind-first audio platformer. <strong>Headphones recommended.</strong></p>
+      </div>
+      <div
+        id="focus-trap"
+        tabindex="0"
+        aria-label="Game active. Arrow keys to move, Space to jump, F to fire, Q for echolocation ping, B toggles mono, V toggles verbose Mara, R toggles reduced threat speed."
+      >
+        <span class="focus-idle">Click or Tab here</span>
+        <span class="focus-active">Keyboard active</span>
+      </div>
     </div>
 
-    <!-- Echolocation ping readiness indicator -->
-    <div id="ping-indicator" class="ready" aria-hidden="true">[ Q ] Echolocation — ready</div>
+    <section class="status-grid" aria-hidden="true">
+      <div class="status-tile">
+        <div class="status-label">State</div>
+        <div class="status-value" id="state-value">Menu</div>
+      </div>
+      <div class="status-tile">
+        <div class="status-label">Depth</div>
+        <div class="status-value" id="depth-value">1</div>
+      </div>
+      <div class="status-tile">
+        <div class="status-label">HP</div>
+        <div class="status-value" id="hp-value">3</div>
+      </div>
+      <div class="status-tile">
+        <div class="status-label">Gems</div>
+        <div class="status-value" id="gems-value">0</div>
+      </div>
+      <div class="status-tile ready" id="ping-tile">
+        <div class="status-label">Echolocation</div>
+        <div class="status-value" id="ping-value">Ready</div>
+      </div>
+      <div class="status-tile">
+        <div class="status-label">Mode</div>
+        <div class="status-value" id="mode-value">Stereo</div>
+      </div>
+    </section>
 
-    <!-- Controls reference -->
+    <section class="main-grid" aria-hidden="true">
+      <div id="status-panel">
+        <div class="panel-label">Mara</div>
+        <div id="mara-display">Press Space or Enter to begin.</div>
+      </div>
+
+      <aside id="visual-event-panel">
+        <div class="panel-label">Recent Events</div>
+        <ol id="visual-event-list">
+          <li>Loaded. Press Space or Enter to begin.</li>
+        </ol>
+      </aside>
+    </section>
+
     <div id="controls-hint" aria-hidden="true">
-      ← → Move &nbsp;|&nbsp; Space Jump &nbsp;|&nbsp; F Fire &nbsp;|&nbsp; Q Echolocation &nbsp;|&nbsp; E Interact &nbsp;|&nbsp; Esc Pause &nbsp;|&nbsp; M Mute<br />
-      B Mono &nbsp;|&nbsp; V Verbose Mara &nbsp;|&nbsp; R Slower threats &nbsp;|&nbsp; [ ] Effects &nbsp;|&nbsp; ; ' Speech
+      <div class="control-grid">
+        <div class="control"><span class="key">← →</span><span>Move</span></div>
+        <div class="control"><span class="key">Space</span><span>Jump / Start</span></div>
+        <div class="control"><span class="key">Q</span><span>Echolocation</span></div>
+        <div class="control"><span class="key">F</span><span>Fire</span></div>
+        <div class="control"><span class="key">E</span><span>Interact</span></div>
+        <div class="control"><span class="key">Esc</span><span>Pause</span></div>
+        <div class="control"><span class="key">M</span><span>Mute</span></div>
+        <div class="control"><span class="key">B</span><span>Mono</span></div>
+        <div class="control"><span class="key">V</span><span>Verbose Mara</span></div>
+        <div class="control"><span class="key">R</span><span>Slow Threats</span></div>
+      </div>
     </div>
 
-    <!--
-      Keyboard focus trap for the game.
-      When focused, this element absorbs all keydown events for the game loop.
-      Screen readers: virtual cursor mode suspended inside role="application".
-    -->
-    <div
-      id="focus-trap"
-      tabindex="0"
-      aria-label="Game active. Arrow keys to move, Space to jump, F to fire, Q for echolocation ping, B toggles mono, V toggles verbose Mara, R toggles reduced threat speed."
-    ></div>
+    <div id="depth-line">Depth: —</div>
+    <div id="state-display"></div>
+    <div id="ping-indicator" class="ready">[ Q ] Echolocation — ready</div>
+
   </main>
 
+  <noscript>JavaScript is required to play Descend into Darkness.</noscript>
   <script type="module" src="bundle.js"></script>
 </body>
 </html>
